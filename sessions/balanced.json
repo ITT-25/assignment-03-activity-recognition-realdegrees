@@ -1,0 +1,61 @@
+{
+    "stages": [
+        {
+            "name": "Warmup",
+            "activities": [
+                {
+                    "name": "running",
+                    "duration": 10
+                },
+                {
+                    "name": "jumpingjack",
+                    "duration": 5
+                }
+            ]
+        },
+        {
+            "name": "Lifting Set 1",
+            "activities": [
+                {
+                    "name": "lifting",
+                    "duration": 10
+                }
+            ]
+        },
+        {
+            "name": "Lifting Set 2",
+            "activities": [
+                {
+                    "name": "lifting",
+                    "duration": 8
+                }
+            ]
+        },
+        {
+            "name": "Lifting Set 3",
+            "activities": [
+                {
+                    "name": "lifting",
+                    "duration": 5
+                }
+            ]
+        },
+        {
+            "name": "Endurance",
+            "activities": [
+                {
+                    "name": "rowing",
+                    "duration": 30
+                },
+                {
+                    "name": "running",
+                    "duration": 20
+                },
+                {
+                    "name": "jumpingjack",
+                    "duration": 15
+                }
+            ]
+        }
+    ]
+}
