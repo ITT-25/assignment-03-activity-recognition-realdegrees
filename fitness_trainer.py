@@ -8,6 +8,7 @@ from pyglet.graphics import Batch
 from collections import deque
 from activity_recognizer import ActivityRecognizer, Preprocessor
 from DIPPID import SensorUDP
+from gather_data import get_ip
 from src.config import Config
 from src.table import StageDisplay
 from src.info import SessionInfoDisplay
@@ -57,6 +58,8 @@ class FitnessTrainer(Window):
         self.session_info_display = SessionInfoDisplay(self.batch, session)
         self.session_info_display.update(self.current_stage)
 
+        print(f"DIPPID server listening on {get_ip()}:{self.sensor._port}")
+        
         # Start the pyglet loop
         glClearColor(24, 24, 24, 1.0)
         pyglet.clock.schedule_interval(self.update, 1.0 / self.sample_rate)
