@@ -34,20 +34,20 @@ class Preprocessor:
             signal = window[axis].values
             features[f"{axis}_mean"] = np.mean(signal)
             features[f"{axis}_std"] = np.std(signal)
-            features[f"{axis}_energy"] = np.sum(signal ** 2) / len(signal)
+            features[f"{axis}_energy"] = np.sum(signal**2) / len(signal)
             features[f"{axis}_median"] = np.median(signal)
 
         # Vector magnitudes (time-domain)
-        acc_mag = np.sqrt(window['acc_x']**2 + window['acc_y']**2 + window['acc_z']**2)
-        gyro_mag = np.sqrt(window['gyro_x']**2 + window['gyro_y']**2 + window['gyro_z']**2)
-        features['acc_mag_mean'] = np.mean(acc_mag)
-        features['acc_mag_std'] = np.std(acc_mag)
-        features['acc_mag_energy'] = np.sum(acc_mag**2) / len(acc_mag)
-        features['acc_mag_median'] = np.median(acc_mag)
-        features['gyro_mag_mean'] = np.mean(gyro_mag)
-        features['gyro_mag_std'] = np.std(gyro_mag)
-        features['gyro_mag_energy'] = np.sum(gyro_mag**2) / len(gyro_mag)
-        features['gyro_mag_median'] = np.median(gyro_mag)
+        acc_mag = np.sqrt(window["acc_x"] ** 2 + window["acc_y"] ** 2 + window["acc_z"] ** 2)
+        gyro_mag = np.sqrt(window["gyro_x"] ** 2 + window["gyro_y"] ** 2 + window["gyro_z"] ** 2)
+        features["acc_mag_mean"] = np.mean(acc_mag)
+        features["acc_mag_std"] = np.std(acc_mag)
+        features["acc_mag_energy"] = np.sum(acc_mag**2) / len(acc_mag)
+        features["acc_mag_median"] = np.median(acc_mag)
+        features["gyro_mag_mean"] = np.mean(gyro_mag)
+        features["gyro_mag_std"] = np.std(gyro_mag)
+        features["gyro_mag_energy"] = np.sum(gyro_mag**2) / len(gyro_mag)
+        features["gyro_mag_median"] = np.median(gyro_mag)
 
         return features
 
@@ -82,28 +82,24 @@ class ActivityRecognizer:
 
         # Use train_test_split to have a final test set for evaluation
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-        
+
         # Use cross-validation to find best parameters
-        
-        param_grid = {
-            'C': [0.1, 1, 10, 100],
-            'gamma': ['scale', 'auto', 0.1, 0.01],
-            'kernel': ['rbf', 'linear']
-        }
-        
+
+        param_grid = {"C": [0.1, 1, 10, 100], "gamma": ["scale", "auto", 0.1, 0.01], "kernel": ["rbf", "linear"]}
+
         clf = GridSearchCV(
             SVC(probability=True, decision_function_shape="ovr"),
             param_grid=param_grid,
             cv=cv,
             verbose=1,
-            scoring='accuracy'
+            scoring="accuracy",
         )
-        
+
         clf.fit(X_train, y_train)
-        
+
         print(f"Best parameters found: {clf.best_params_}")
         print(f"Cross-validation score: {clf.best_score_:.4f}")
-        
+
         # Evaluate on the test set with the best model
         best_model = clf.best_estimator_
         y_pred = best_model.predict(X_test)
@@ -116,7 +112,7 @@ class ActivityRecognizer:
         # Save the best model
         joblib.dump((best_model, self.encoder), model_output_path)
         print(f"Trained model and label encoder saved to {model_output_path}")
-        
+
         # Store the best model in the object
         self.model = best_model
 

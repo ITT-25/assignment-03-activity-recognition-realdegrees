@@ -21,7 +21,17 @@ def get_ip():
 
 
 class CaptureData:
-    def __init__(self, activity: str, prefix: str, duration: float, sets: int, set_offset: int, delay: float, port: int, sampling_rate: int = 100):
+    def __init__(
+        self,
+        activity: str,
+        prefix: str,
+        duration: float,
+        sets: int,
+        set_offset: int,
+        delay: float,
+        port: int,
+        sampling_rate: int = 100,
+    ):
         self.delay = delay
         self.activity = activity
         self.prefix = prefix
@@ -51,7 +61,9 @@ class CaptureData:
             self.sensor.unregister_callback("button_2", redo_set)
 
             if len(self.df) > 0:
-                self.df.to_csv(f"data/{self.prefix}-{self.activity}-{self.set_offset + self.current_set}.csv", index=False)
+                self.df.to_csv(
+                    f"data/{self.prefix}-{self.activity}-{self.set_offset + self.current_set}.csv", index=False
+                )
                 self.df.drop(self.df.index, inplace=True)
 
             if self.current_set >= self.sets:
@@ -159,7 +171,13 @@ class CaptureData:
 @click.option("--prefix", "-p", help="Prefix for CSV filename", type=str, default="prefix")
 @click.option("--duration", "-d", help="Duration in seconds", type=float, default=10)
 @click.option("--sets", "-s", help="Number of sets to capture", type=int, default=5)
-@click.option("--set-offset", "-o", help="Offset the start number for captured sets (Useful if you already have existing data sets)", type=int, default=0)
+@click.option(
+    "--set-offset",
+    "-o",
+    help="Offset the start number for captured sets (Useful if you already have existing data sets)",
+    type=int,
+    default=0,
+)
 @click.option("--delay", help="Delay before capture in seconds", type=float, default=3)
 @click.option("--port", help="DIPPID client port", type=int, default=5700)
 @click.option("--sampling-rate", help="Sampling rate in Hz", type=int, default=200)
