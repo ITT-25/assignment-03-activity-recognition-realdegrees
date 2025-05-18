@@ -22,18 +22,17 @@ def resample_csv(file_path):
 
         # convert timestamps
         df["timestamp"] = pd.to_datetime(df["timestamp"], unit="s")
-
+        df.drop(columns=["id"], inplace=True)
+        
         # resample at 100 Hz
-        df.set_index("timestamp", inplace=True)
-        df = df.resample("10ms").mean().interpolate()
+        df = df.resample("10ms", on="timestamp").mean().interpolate()
 
-        # reset index → bring timestamps back as a column
         df.reset_index(inplace=True)
 
         # convert back to integer ms
         df["timestamp"] = (df["timestamp"] - pd.Timestamp("1970-01-01")) // pd.Timedelta("1ms")
 
-        df.to_csv(file_path, index=True)
+        df.to_csv(file_path, index=True, index_label="id")
 
         print(f"  Successfully resampled and saved back to {file_path}")
     except Exception as e:
