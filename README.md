@@ -40,8 +40,37 @@ Capturing the data at **100 Hz** will result in data loss if the DIPPID client s
 
 # Activity Recognition
 
+> 💡 Activity recognition *can* be started as a console application seperately from the game using `python activity_recognizer --window-seconds 1 --sample-rate 60` (Parameters optional)  
+> 💡 If you want to run both at the same time you need to change the `--port` for one of them
+
 ## Usage
 
 ```sh
-python fitness_trainer.py
+python fitness_trainer.py --session-file "sessions/balanced.json"
 ```
+
+At the first start of the application the model is trained using the training data in [the data folder](./data/).  
+It uses all `.csv` files in the folder. All files **must** follow this naming scheme `<name>-<activity>-<setnumber>.csv` or training will fail (the \<activity> is used as `y` for the classifier).  
+Subsequent launches of the application will load the model from disk instead of retraining. The first launch can take a while due to cross-validation of parameters to find the best model.  
+
+The fitness trainer application was designed with training set configurations in json format.  
+The default session file [balanced.json](./sessions/balanced.json) includes a full sample training session with all activites that the model has been trained on.  
+
+```json
+// A session config must follow this format
+{
+    "stages": [
+        {
+            "name": "Example Stage Name",
+            "activities": [
+                {
+                    "name": "rowing", // Must be one of the available activities and be unique within the stage
+                    "duration": 30, // Duration in seconds for this activity
+                }
+            ]
+        }
+    ]
+}
+```
+
+Once the game has started connect to the DIPPID server (ip and port are printed in the console) and follow the on-screen instructions to complete the training session.
