@@ -1,3 +1,4 @@
+import sys
 from typing import Deque, Tuple
 import pandas as pd
 import click
@@ -173,6 +174,10 @@ class FitnessTrainer(Window):
         self.clear()
         self.batch.draw()
 
+    def on_close(self):
+        self.sensor.disconnect()
+        sys.exit(0)  # Exit the application when the window is closed
+
 
 @click.command()
 @click.option("--data-dir", default="data", help="Path to the raw CSV data directory", type=str)
@@ -180,23 +185,27 @@ class FitnessTrainer(Window):
 @click.option("--port", default=5700, help="Port for the UDP sensor", type=int)
 @click.option("--session-file", default="sessions/balanced.json", help="Path to the session file", type=str)
 def main(data_dir: str, model_output: str, port: int, session_file: str):
+    # Read training data
     preprocessor = Preprocessor(data_dir)
     processed_data = preprocessor.process_all_files()
 
+    # Train the model
     model = ActivityRecognizer(processed_data)
     try:
         model.load(model_path=model_output)
     except Exception:
         print(f"Unable to load model from {model_output}. Training a new model.")
         model.train(model_output_path=model_output)
-    model.load(model_path=model_output)
 
+    # Load model
+    model.load(model_path=model_output)
     print("Model loaded successfully")
 
+    # Load session config
     session = TrainingSession(session_file)
-
     print("Loaded training session successfully")
 
+    # Start the fitness trainer (pyglet window)
     FitnessTrainer(model, SensorUDP(port), session)
 
 
