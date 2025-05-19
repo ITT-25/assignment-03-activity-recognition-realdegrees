@@ -86,7 +86,7 @@ class FitnessTrainer(Window):
         distance_from_idle = np.sqrt(std_x**2 + std_y**2 + std_z**2)
 
         # Threshold for idle detection, lower = less movement
-        idle_threshold = 0.3
+        idle_threshold = 0.5
 
         return distance_from_idle < idle_threshold
 
@@ -146,7 +146,7 @@ class FitnessTrainer(Window):
             return  # Not enough data to make a prediction or device is idle
 
         prediction, confidence = self.model.predict(window)
-        confidence_threshold_met = confidence >= 0.99
+        confidence_threshold_met = confidence >= 0.98
 
         # Add the current prediction to the buffer if confidence threshold is met
         if confidence_threshold_met:

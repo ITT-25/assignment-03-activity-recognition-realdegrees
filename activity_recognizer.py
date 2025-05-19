@@ -15,6 +15,7 @@ from collections import deque
 from DIPPID import SensorUDP
 import time
 from sklearn.model_selection import GridSearchCV
+from sklearn.preprocessing import MinMaxScaler
 
 
 class Preprocessor:
@@ -25,7 +26,7 @@ class Preprocessor:
 
     def get_features(self, window: pd.DataFrame, fs: float = 50.0) -> dict:
         """
-        Extract baseline time-domain features and basic frequency-domain features
+        Extract baseline time-domain features and rotation independent variables
         from accelerometer and gyroscope data in the given window.
         """
         features = {}
@@ -37,7 +38,7 @@ class Preprocessor:
             features[f"{axis}_energy"] = np.sum(signal**2) / len(signal)
             features[f"{axis}_median"] = np.median(signal)
 
-        # Vector magnitudes (time-domain)
+        # Vector magnitudes
         acc_mag = np.sqrt(window["acc_x"] ** 2 + window["acc_y"] ** 2 + window["acc_z"] ** 2)
         gyro_mag = np.sqrt(window["gyro_x"] ** 2 + window["gyro_y"] ** 2 + window["gyro_z"] ** 2)
         features["acc_mag_mean"] = np.mean(acc_mag)
@@ -48,6 +49,8 @@ class Preprocessor:
         features["gyro_mag_std"] = np.std(gyro_mag)
         features["gyro_mag_energy"] = np.sum(gyro_mag**2) / len(gyro_mag)
         features["gyro_mag_median"] = np.median(gyro_mag)
+        
+        # Could add more features like gyro/acc correlation or frequency domain features but results are already pretty good and didn't change much with more features
 
         return features
 
@@ -70,28 +73,34 @@ class Preprocessor:
 
 
 class ActivityRecognizer:
+    model: Optional[SVC] = None
+    encoder: Optional[LabelEncoder] = None
+    scaler: Optional[MinMaxScaler] = None
+    
     def __init__(self, data: pd.DataFrame):
         self.data: pd.DataFrame = data.dropna()
-        self.model: Optional[SVC] = None
-        self.encoder = LabelEncoder()
         self.preprocessor = Preprocessor(raw_data_dir=None)
 
     def train(self, model_output_path="svm_model.pkl", cv=5):
-        y = self.encoder.fit_transform(self.data["label"])
+        encoder = LabelEncoder()
+        y = encoder.fit_transform(self.data["label"])
         X = self.data.drop(columns=["label"])
+
+        # Scale features to [0, 1] range before training
+        scaler = MinMaxScaler()
+        X = scaler.fit_transform(X)
 
         # Use train_test_split to have a final test set for evaluation
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
         # Use cross-validation to find best parameters
-
-        param_grid = {"C": [0.1, 1, 10, 100], "gamma": ["scale", "auto", 0.1, 0.01], "kernel": ["rbf", "linear"]}
+        param_grid = {"C": [0.1, 1, 10], "gamma": ["scale", "auto", 0.1, 1, 10], "decision_function_shape": ["ovo", "ovr"]}
 
         clf = GridSearchCV(
-            SVC(probability=True, decision_function_shape="ovr"),
+            SVC(probability=True, kernel="rbf"),
             param_grid=param_grid,
             cv=cv,
-            verbose=1,
+            verbose=10,
             scoring="accuracy",
         )
 
@@ -101,27 +110,25 @@ class ActivityRecognizer:
         print(f"Cross-validation score: {clf.best_score_:.4f}")
 
         # Evaluate on the test set with the best model
-        best_model = clf.best_estimator_
-        y_pred = best_model.predict(X_test)
+        y_pred = clf.predict(X_test)
+        
         print("Classification Report:")
-        print(classification_report(self.encoder.inverse_transform(y_test), self.encoder.inverse_transform(y_pred)))
+        print(classification_report(encoder.inverse_transform(y_test), encoder.inverse_transform(y_pred)))
         print(
-            "Accuracy:", accuracy_score(self.encoder.inverse_transform(y_test), self.encoder.inverse_transform(y_pred))
+            "Accuracy:", accuracy_score(encoder.inverse_transform(y_test), encoder.inverse_transform(y_pred))
         )
-
+        
         # Save the best model
-        joblib.dump((best_model, self.encoder), model_output_path)
-        print(f"Trained model and label encoder saved to {model_output_path}")
-
-        # Store the best model in the object
-        self.model = best_model
+        joblib.dump((clf, encoder, scaler), model_output_path)
+        print(f"Tuple of (clf, encoder, scaler) saved to {model_output_path}")
 
     def load(self, model_path="svm_model.pkl"):
-        self.model, self.encoder = joblib.load(model_path)
+        self.model, self.encoder, self.scaler = joblib.load(model_path)
 
     def predict(self, window: pd.DataFrame) -> Tuple[str, float]:
         features = self.preprocessor.get_features(window)
         X = pd.DataFrame([features])
+        X = self.scaler.transform(X)
         pred = self.model.predict(X)
         probabilities = self.model.predict_proba(X)
         label = self.encoder.inverse_transform(pred)[0]
