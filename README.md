@@ -35,8 +35,7 @@ python resample.py
 ```
 
 To get the data sheets at a rate of **100 Hz** as described in [Task 1](./assignment03.pdf) you can either adjust the sampling rate directly or use the modified [resample script](./resample.py).  
-This script will resample all `.csv` files in the `data` folder to **100 Hz**. It is recommended to manually resample.  
-Capturing the data at **100 Hz** will result in data loss if the DIPPID client sends the data at a higher frequency (which the android client apparently does).  
+This script will resample all `.csv` files in the `data` folder to **100 Hz**. (The script will interpolate missing data points if the existing frequency is below 100 Hz)
 
 # Activity Recognition
 
