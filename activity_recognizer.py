@@ -14,7 +14,6 @@ import click
 from collections import deque
 from DIPPID import SensorUDP
 import time
-from sklearn.model_selection import GridSearchCV
 from sklearn.preprocessing import MinMaxScaler
 
 
@@ -84,7 +83,7 @@ class ActivityRecognizer:
         self.data: pd.DataFrame = data.dropna()
         self.preprocessor = Preprocessor(raw_data_dir=None)
 
-    def train(self, model_output_path="svm_model.pkl", cv=5):
+    def train(self, model_output_path="svm_model.pkl"):
         encoder = LabelEncoder()
         y = encoder.fit_transform(self.data["label"])
         X = self.data.drop(columns=["label"])
@@ -96,25 +95,10 @@ class ActivityRecognizer:
         # Use train_test_split to have a final test set for evaluation
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-        # Use cross-validation to find best parameters
-        param_grid = {
-            "C": [0.1, 1, 10],
-            "gamma": ["scale", "auto", 0.1, 1, 10],
-            "decision_function_shape": ["ovo", "ovr"],
-        }
-
-        clf = GridSearchCV(
-            SVC(probability=True, kernel="rbf"),
-            param_grid=param_grid,
-            cv=cv,
-            verbose=10,
-            scoring="accuracy",
-        )
+        # Parameters were selected on the best parameters found by a grid search with 3000+ combinations
+        clf = SVC(probability=True, kernel="rbf", decision_function_shape="ovo", C=10, gamma=10)
 
         clf.fit(X_train, y_train)
-
-        print(f"Best parameters found: {clf.best_params_}")
-        print(f"Cross-validation score: {clf.best_score_:.4f}")
 
         # Evaluate on the test set with the best model
         y_pred = clf.predict(X_test)
