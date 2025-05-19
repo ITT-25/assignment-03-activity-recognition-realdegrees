@@ -205,6 +205,7 @@ def main(data_dir: str, model_output: str, port: int, session_file: str):
     session = TrainingSession(session_file)
     print("Loaded training session successfully")
 
+    print("Loading UI please wait...", end="\r")
     # Start the fitness trainer (pyglet window)
     FitnessTrainer(model, SensorUDP(port), session)
 
