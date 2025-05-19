@@ -43,6 +43,16 @@ class FitnessTrainer(Window):
 
         # Init graphics stuff
         self.batch = Batch()
+
+        self.background = pyglet.shapes.Rectangle(
+            x=0,
+            y=0,
+            width=self.width,
+            height=self.height,
+            color=(24, 24, 24, 255),
+            batch=self.batch,
+        )
+
         self.stage_display = StageDisplay(self.batch)
         self.stage_display.set_data(session.stages[self.current_stage])  # Set the first stage
 
@@ -52,7 +62,6 @@ class FitnessTrainer(Window):
         print(f"DIPPID server listening on {get_ip()}:{self.sensor._port}")
 
         # Start the pyglet loop
-        glClearColor(24, 24, 24, 1.0)
         pyglet.clock.schedule_interval(self.update, 1.0 / self.sample_rate)
         pyglet.app.run()
 
@@ -62,7 +71,7 @@ class FitnessTrainer(Window):
         return super().on_resize(width, height)
 
     def device_idle(
-        self, window: pd.DataFrame, threshold: float = 0.45, min_idle_sec: float = 0.4
+        self, window: pd.DataFrame, threshold: float = 0.15, min_idle_sec: float = 0.7
     ) -> Tuple[bool, float]:
         """Use distance from idle state to determine if the device is idle."""
 
@@ -109,6 +118,7 @@ class FitnessTrainer(Window):
         return activity_ratio >= 0.6
 
     def update(self, dt: float):
+        self.session_info_display.update(dt)
         # Handle stage logic and update both the stage display and the overview/info display
         if self.stage_display.is_complete():
             self.current_stage += 1
@@ -118,7 +128,6 @@ class FitnessTrainer(Window):
 
             self.stage_display.set_data(self.session.stages[self.current_stage])
             return
-        self.session_info_display.update(dt)
 
         # Get the current sensor value and append it to the buffers
         acc = self.sensor.get_value("accelerometer")

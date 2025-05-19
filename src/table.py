@@ -6,8 +6,6 @@ from src.util import load_activity_images
 
 COLUMN_PADDING = 20
 ACTIVITY_TYPES = ["jumpingjack", "running", "lifting", "rowing"]
-BG_DEFAULT_COLOR = (200, 200, 200, 255)
-BG_COMPLETE_COLOR = (150, 220, 150, 255)
 
 
 class ActivityDisplay:
@@ -33,7 +31,7 @@ class ActivityDisplay:
             y=self.y - self.height,
             width=self.width,
             height=self.height,
-            color=BG_DEFAULT_COLOR,
+            color=Config.PRIMARY_COLOR,
             batch=self.batch,
         )
 
@@ -58,7 +56,7 @@ class ActivityDisplay:
             anchor_x="center",
             anchor_y="center",
             batch=self.batch,
-            color=(24, 24, 24, 255),
+            color=Config.TEXT_COLOR,
         )
         offset += margin + self.label.content_height
 
@@ -100,7 +98,7 @@ class ActivityDisplay:
             anchor_x="right",
             anchor_y="center",
             batch=self.batch,
-            color=(24, 24, 24, 255),
+            color=Config.TEXT_COLOR,
         )
 
         # Progress shapes
@@ -110,12 +108,17 @@ class ActivityDisplay:
             y=progress_bar_y,
             width=self.width,
             height=progress_bar_height,
-            color=(150, 150, 150, 255),
+            color=Config.SECONDARY_COLOR,
             batch=self.batch,
         )
 
         self.progress_bar = pyglet.shapes.Rectangle(
-            x=rect_x, y=progress_bar_y, width=0, height=progress_bar_height, color=(0, 180, 0, 255), batch=self.batch
+            x=rect_x,
+            y=progress_bar_y,
+            width=0,
+            height=progress_bar_height,
+            color=Config.SUCCESS_COLOR,
+            batch=self.batch,
         )
 
     def _scale_image(self, available_height: int):
@@ -150,7 +153,7 @@ class ActivityDisplay:
 
         # Change style based on completion
         if is_complete:
-            self.background.color = BG_COMPLETE_COLOR
+            self.background.color = Config.SUCCESS_COLOR
             self.image_sprite.opacity = 150
 
 
