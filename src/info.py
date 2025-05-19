@@ -64,14 +64,9 @@ class ActivityMeter:
         smoothing = 5.0
 
         # Linear interpolation towards target width
-        self.meter_foreground.width += (target -
-                                        self.meter_foreground.width) * min(dt * smoothing, 1.0)
+        self.meter_foreground.width += (target - self.meter_foreground.width) * min(dt * smoothing, 1.0)
         self.meter_foreground.color = lerp_colors(
-            [
-                self.start_color,
-                self.middle_color, self.middle_color,
-                self.end_color, self.end_color, self.end_color
-            ],
+            [self.start_color, self.middle_color, self.middle_color, self.end_color, self.end_color, self.end_color],
             self.meter_foreground.width / self.width,
         )
 
@@ -114,8 +109,7 @@ class StagePreviewDisplay:
             color=(24, 24, 24, 255),
         )
         self.activity_preview_images: List[pyglet.image.AbstractImage] = [
-            load_activity_images(activity.name)[0]
-            for activity in stage.activities
+            load_activity_images(activity.name)[0] for activity in stage.activities
         ]
         for image in self.activity_preview_images:
             image.anchor_x = image.width
@@ -126,12 +120,7 @@ class StagePreviewDisplay:
 
         for i, image in enumerate(self.activity_preview_images):
             # Create sprite with original image dimensions
-            sprite = pyglet.sprite.Sprite(
-                image,
-                x=x + x_offset,
-                y=y,
-                batch=batch
-            )
+            sprite = pyglet.sprite.Sprite(image, x=x + x_offset, y=y, batch=batch)
 
             scale_factor = (self.height * 0.9) / image.height
             sprite.scale = scale_factor
@@ -139,19 +128,20 @@ class StagePreviewDisplay:
             self.images.append(sprite)
 
             # Update x_offset for next sprite
-            x_offset += (sprite.width + 2)
+            x_offset += sprite.width + 2
 
     def set_progress(self, progress: float):
         self.progress_bar.width = self.width * progress
 
 
 class SessionInfoDisplay:
-    def __init__(self, batch: pyglet.graphics.Batch, session: Optional["TrainingSession"], stage_display: "StageDisplay"):
+    def __init__(
+        self, batch: pyglet.graphics.Batch, session: Optional["TrainingSession"], stage_display: "StageDisplay"
+    ):
         self.batch = batch
         self.session = session
         self.stage_display = stage_display
         self.info_area_height = Config.window_height * 0.3  # Bottom 30% of screen
-
 
         # Initialize the stage overview displays
         margin = 10
@@ -168,15 +158,23 @@ class SessionInfoDisplay:
         )
         self.stage_overview_displays = [
             StagePreviewDisplay(
-                self.batch, stage, x=margin, y=self.info_area_height - margin - self.stage_overview_label.font_size * 2 - i * (StagePreviewDisplay.height + gap))
+                self.batch,
+                stage,
+                x=margin,
+                y=self.info_area_height
+                - margin
+                - self.stage_overview_label.font_size * 2
+                - i * (StagePreviewDisplay.height + gap),
+            )
             for i, stage in enumerate(session.stages)
         ]
-        
+
         # Initialize Activity Meter
         meter_width = 400
-        self.activity_meter = ActivityMeter(self.batch, meter_width, 30, Config.window_width - margin - meter_width, self.info_area_height - margin)
+        self.activity_meter = ActivityMeter(
+            self.batch, meter_width, 30, Config.window_width - margin - meter_width, self.info_area_height - margin
+        )
 
-        
     def update(self, dt: float):
         for stage_overview_display in self.stage_overview_displays:
             if self.stage_display.stage.name == stage_overview_display.stage.name:

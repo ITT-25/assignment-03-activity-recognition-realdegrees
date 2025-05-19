@@ -62,7 +62,6 @@ class ActivityDisplay:
         )
         offset += margin + self.label.content_height
 
-
         # Load activity images
         self.images = load_activity_images(self.activity.name)
 
@@ -183,12 +182,16 @@ class StageDisplay:
             )
 
     def is_complete(self) -> bool:
-        return all(column.completion >= column.activity.duration for column in self.columns if column.activity is not None)
-    
+        return all(
+            column.completion >= column.activity.duration for column in self.columns if column.activity is not None
+        )
+
     def get_completion(self) -> float:
         if not self.stage:
             return 0.0
-        return sum(column.completion for column in self.columns if column.activity) / sum(column.activity.duration for column in self.columns if column.activity)
+        return sum(column.completion for column in self.columns if column.activity) / sum(
+            column.activity.duration for column in self.columns if column.activity
+        )
 
     def update(self, dt: float, activity_name: str):
         if not self.stage:

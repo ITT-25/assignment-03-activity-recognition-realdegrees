@@ -49,7 +49,7 @@ class Preprocessor:
         features["gyro_mag_std"] = np.std(gyro_mag)
         features["gyro_mag_energy"] = np.sum(gyro_mag**2) / len(gyro_mag)
         features["gyro_mag_median"] = np.median(gyro_mag)
-        
+
         # Could add more features like gyro/acc correlation or frequency domain features but results are already pretty good and didn't change much with more features
 
         return features
@@ -76,7 +76,7 @@ class ActivityRecognizer:
     model: Optional[SVC] = None
     encoder: Optional[LabelEncoder] = None
     scaler: Optional[MinMaxScaler] = None
-    
+
     def __init__(self, data: pd.DataFrame):
         self.data: pd.DataFrame = data.dropna()
         self.preprocessor = Preprocessor(raw_data_dir=None)
@@ -94,7 +94,11 @@ class ActivityRecognizer:
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
         # Use cross-validation to find best parameters
-        param_grid = {"C": [0.1, 1, 10], "gamma": ["scale", "auto", 0.1, 1, 10], "decision_function_shape": ["ovo", "ovr"]}
+        param_grid = {
+            "C": [0.1, 1, 10],
+            "gamma": ["scale", "auto", 0.1, 1, 10],
+            "decision_function_shape": ["ovo", "ovr"],
+        }
 
         clf = GridSearchCV(
             SVC(probability=True, kernel="rbf"),
@@ -111,13 +115,11 @@ class ActivityRecognizer:
 
         # Evaluate on the test set with the best model
         y_pred = clf.predict(X_test)
-        
+
         print("Classification Report:")
         print(classification_report(encoder.inverse_transform(y_test), encoder.inverse_transform(y_pred)))
-        print(
-            "Accuracy:", accuracy_score(encoder.inverse_transform(y_test), encoder.inverse_transform(y_pred))
-        )
-        
+        print("Accuracy:", accuracy_score(encoder.inverse_transform(y_test), encoder.inverse_transform(y_pred)))
+
         # Save the best model
         joblib.dump((clf, encoder, scaler), model_output_path)
         print(f"Tuple of (clf, encoder, scaler) saved to {model_output_path}")

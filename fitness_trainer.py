@@ -19,7 +19,7 @@ import numpy as np
 class FitnessTrainer(Window):
     _state: str = "idle"
     _idle_frames: int = 0
-    
+
     def __init__(
         self,
         model: ActivityRecognizer,
@@ -50,7 +50,7 @@ class FitnessTrainer(Window):
         self.session_info_display = SessionInfoDisplay(self.batch, session, self.stage_display)
 
         print(f"DIPPID server listening on {get_ip()}:{self.sensor._port}")
-        
+
         # Start the pyglet loop
         glClearColor(24, 24, 24, 1.0)
         pyglet.clock.schedule_interval(self.update, 1.0 / self.sample_rate)
@@ -61,22 +61,24 @@ class FitnessTrainer(Window):
         Config.window_height = height
         return super().on_resize(width, height)
 
-    def device_idle(self, window: pd.DataFrame, threshold:float = 0.45, min_idle_sec: float = 0.4) -> Tuple[bool, float]:
+    def device_idle(
+        self, window: pd.DataFrame, threshold: float = 0.45, min_idle_sec: float = 0.4
+    ) -> Tuple[bool, float]:
         """Use distance from idle state to determine if the device is idle."""
 
         if len(window) < self.window_size:
             return (True, 0.0)  # Not enough data to make a prediction
 
-        acc = window[['acc_x','acc_y','acc_z']].values
+        acc = window[["acc_x", "acc_y", "acc_z"]].values
 
         mag_acc = np.linalg.norm(acc, axis=1)
 
         std_acc = np.std(mag_acc)
 
         # candidate idle if both below threshold
-        is_candidate_idle = (std_acc < threshold)
+        is_candidate_idle = std_acc < threshold
         # hysteresis counters (persist across calls on the class)
-        if not hasattr(self, '_idle_frames'):
+        if not hasattr(self, "_idle_frames"):
             self._idle_frames = 0
             self._active_frames = 0
 
@@ -91,12 +93,11 @@ class FitnessTrainer(Window):
 
         # only flip to idle once we've seen enough idle frames
         if self._idle_frames >= min_idle_frames:
-            self._state = 'idle'
+            self._state = "idle"
         elif self._active_frames >= min_idle_frames:
-            self._state = 'active'
+            self._state = "active"
 
-        return self._state == 'idle', min(1, std_acc / threshold)
-
+        return self._state == "idle", min(1, std_acc / threshold)
 
     def is_activity_majority(self, activity_name: str) -> bool:
         if len(self.prediction_buffer) < self.prediction_buffer.maxlen:

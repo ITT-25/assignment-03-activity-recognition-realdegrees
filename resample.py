@@ -23,7 +23,7 @@ def resample_csv(file_path):
         # convert timestamps
         df["timestamp"] = pd.to_datetime(df["timestamp"], unit="s")
         df.drop(columns=["id"], inplace=True)
-        
+
         # resample at 100 Hz
         df = df.resample("10ms", on="timestamp").mean().interpolate()
 
