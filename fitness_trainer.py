@@ -17,13 +17,16 @@ import numpy as np
 
 
 class FitnessTrainer(Window):
+    _state: str = "idle"
+    _idle_frames: int = 0
+    
     def __init__(
         self,
         model: ActivityRecognizer,
         sensor: SensorUDP,
         session: TrainingSession,
         window_seconds: float = 1,
-        sample_rate: int = 60,
+        sample_rate: int = Config.UPDATE_RATE,
     ):
         super().__init__(Config.window_width, Config.window_height, "Fitness Trainer")
         self.model = model
@@ -40,23 +43,11 @@ class FitnessTrainer(Window):
 
         # Init graphics stuff
         self.batch = Batch()
-        self.label_display = pyglet.text.Label(
-            "Initializing...",
-            font_size=12,
-            x=self.width // 2,
-            y=0,
-            anchor_x="center",
-            anchor_y="bottom",
-            batch=self.batch,
-            color=(24, 24, 24, 255),
-        )
-
         self.stage_display = StageDisplay(self.batch)
         self.stage_display.set_data(session.stages[self.current_stage])  # Set the first stage
 
         # Initialize session info display
-        self.session_info_display = SessionInfoDisplay(self.batch, session)
-        self.session_info_display.update(self.current_stage)
+        self.session_info_display = SessionInfoDisplay(self.batch, session, self.stage_display)
 
         print(f"DIPPID server listening on {get_ip()}:{self.sensor._port}")
         
@@ -70,25 +61,42 @@ class FitnessTrainer(Window):
         Config.window_height = height
         return super().on_resize(width, height)
 
-    def device_idle(self, window: pd.DataFrame) -> bool:
+    def device_idle(self, window: pd.DataFrame, threshold:float = 0.45, min_idle_sec: float = 0.4) -> Tuple[bool, float]:
         """Use distance from idle state to determine if the device is idle."""
 
         if len(window) < self.window_size:
-            return True
+            return (True, 0.0)  # Not enough data to make a prediction
 
-        # Extract accelerometer data features
-        acc_features = window[["acc_x", "acc_y", "acc_z"]].values
-        std_x = np.std(acc_features[:, 0])
-        std_y = np.std(acc_features[:, 1])
-        std_z = np.std(acc_features[:, 2])
+        acc = window[['acc_x','acc_y','acc_z']].values
 
-        # Calculate distance from idle state
-        distance_from_idle = np.sqrt(std_x**2 + std_y**2 + std_z**2)
+        mag_acc = np.linalg.norm(acc, axis=1)
 
-        # Threshold for idle detection, lower = less movement
-        idle_threshold = 0.5
+        std_acc = np.std(mag_acc)
 
-        return distance_from_idle < idle_threshold
+        # candidate idle if both below threshold
+        is_candidate_idle = (std_acc < threshold)
+        # hysteresis counters (persist across calls on the class)
+        if not hasattr(self, '_idle_frames'):
+            self._idle_frames = 0
+            self._active_frames = 0
+
+        if is_candidate_idle:
+            self._idle_frames += 1
+            self._active_frames = 0
+        else:
+            self._active_frames += 1
+            self._idle_frames = 0
+
+        min_idle_frames = int(min_idle_sec * Config.UPDATE_RATE)
+
+        # only flip to idle once we've seen enough idle frames
+        if self._idle_frames >= min_idle_frames:
+            self._state = 'idle'
+        elif self._active_frames >= min_idle_frames:
+            self._state = 'active'
+
+        return self._state == 'idle', min(1, std_acc / threshold)
+
 
     def is_activity_majority(self, activity_name: str) -> bool:
         if len(self.prediction_buffer) < self.prediction_buffer.maxlen:
@@ -100,31 +108,22 @@ class FitnessTrainer(Window):
         return activity_ratio >= 0.6
 
     def update(self, dt: float):
-        # Check if the stage is complete and advance to the next one if it is
+        # Handle stage logic and update both the stage display and the overview/info display
         if self.stage_display.is_complete():
             self.current_stage += 1
             if self.current_stage >= len(self.session.stages):
-                self.label_display.text = "All stages completed!"
                 self.stage_display.set_data(None)
-                # Update session info for completion
-                self.session_info_display.update(self.current_stage)
                 return
 
             self.stage_display.set_data(self.session.stages[self.current_stage])
-            # Update session info for new stage
-            self.session_info_display.update(self.current_stage)
             return
+        self.session_info_display.update(dt)
 
         # Get the current sensor value and append it to the buffers
         acc = self.sensor.get_value("accelerometer")
         gyro = self.sensor.get_value("gyroscope")
 
-        if acc is None or gyro is None:
-            self.label_display.text = "Not connected to sensor!"
-            self.label_display.color = (245, 135, 40, 255)
-        else:
-            self.label_display.text = "No activity detected. Complete all exercises to advance."
-            self.label_display.color = (120, 165, 70, 255)
+        if acc is not None and gyro is not None:
             self.acc_buffer.append((acc["x"], acc["y"], acc["z"]))
             self.gyro_buffer.append((gyro["x"], gyro["y"], gyro["z"]))
 
@@ -138,11 +137,9 @@ class FitnessTrainer(Window):
             "gyro_z": [x[2] for x in self.gyro_buffer],
         }
         window = pd.DataFrame(data)
-
-        if len(self.acc_buffer) < self.window_size or self.device_idle(window):
-            target_y = 0
-            current_y = self.label_display.y
-            self.label_display.y = current_y + (target_y - current_y) * 0.1
+        is_idle, idle_threshold_ratio = self.device_idle(window)
+        self.session_info_display.activity_meter.update(dt, idle_threshold_ratio)
+        if len(self.acc_buffer) < self.window_size or is_idle:
             return  # Not enough data to make a prediction or device is idle
 
         prediction, confidence = self.model.predict(window)
@@ -158,11 +155,6 @@ class FitnessTrainer(Window):
         # Update stage display with prediction only if activity meets majority threshold
         if activity_meets_majority:
             self.stage_display.update(dt, prediction)
-
-        # Slide info text based on confidence level and majority threshold
-        target_y = -self.label_display.content_height if activity_meets_majority else 0
-        current_y = self.label_display.y
-        self.label_display.y = current_y + (target_y - current_y) * 0.1
 
     def on_draw(self):
         self.clear()

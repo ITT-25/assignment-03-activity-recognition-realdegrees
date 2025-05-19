@@ -2,6 +2,7 @@ from typing import List, Optional
 import pyglet
 from src.config import Config
 from src.training import Activity, Stage
+from src.util import load_activity_images
 
 COLUMN_PADDING = 20
 ACTIVITY_TYPES = ["jumpingjack", "running", "lifting", "rowing"]
@@ -22,7 +23,6 @@ class ActivityDisplay:
         self.batch = batch
         self.activity = activity
         self.completion = 0.0
-        self.empty = activity is None
         self.last_image_update_delta = 0.0
         self.x, self.y, self.width, self.height = x, y, width, height
 
@@ -38,7 +38,7 @@ class ActivityDisplay:
         )
 
         # Don't setup display elements if this is just a placeholder display
-        if self.empty:
+        if activity is None:
             return
 
         # Setup display elements
@@ -62,8 +62,9 @@ class ActivityDisplay:
         )
         offset += margin + self.label.content_height
 
+
         # Load activity images
-        self.images = self._load_activity_images()
+        self.images = load_activity_images(self.activity.name)
 
         # Calculate available space for image
         progress_bar_height = 15
@@ -118,20 +119,6 @@ class ActivityDisplay:
             x=rect_x, y=progress_bar_y, width=0, height=progress_bar_height, color=(0, 180, 0, 255), batch=self.batch
         )
 
-    def _load_activity_images(self):
-        images = []
-        for i in range(1, 3):
-            try:
-                img = pyglet.image.load(f"img/{self.activity.name}_{i}.png")
-            except Exception as e:
-                print(f"Failed to load img/{self.activity.name}_{i}.png: {e}")
-                img = pyglet.image.SolidColorImagePattern((255, 255, 255, 255)).create_image(50, 50)
-
-            # Set anchor points to center-bottom for consistent positioning
-            img.anchor_x, img.anchor_y = img.width // 2, img.height
-            images.append(img)
-        return images
-
     def _scale_image(self, available_height: int):
         # Reset scale to original size first to get original dimensions
         self.image_sprite.scale = 1.0
@@ -141,7 +128,7 @@ class ActivityDisplay:
         self.image_sprite.scale = scale
 
     def update(self, dt: float):
-        if self.empty:
+        if self.activity is None:
             return
 
         # Update completion and set complete flag state
@@ -196,7 +183,12 @@ class StageDisplay:
             )
 
     def is_complete(self) -> bool:
-        return all(column.completion >= column.activity.duration for column in self.columns if not column.empty)
+        return all(column.completion >= column.activity.duration for column in self.columns if column.activity is not None)
+    
+    def get_completion(self) -> float:
+        if not self.stage:
+            return 0.0
+        return sum(column.completion for column in self.columns if column.activity) / sum(column.activity.duration for column in self.columns if column.activity)
 
     def update(self, dt: float, activity_name: str):
         if not self.stage:
