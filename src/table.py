@@ -52,9 +52,15 @@ class ActivityDisplay:
         font_size = max(10, min(24, int(self.width * 0.07)))
         offset = 20
 
+        activity_name_map = {
+            "jumpingjack": "Jumping Jacks",
+            "running": "Running",
+            "lifting": "Lifting",
+            "rowing": "Rowing",
+        }
         # Create activity name label
         self.label = pyglet.text.Label(
-            self.activity.name,
+            activity_name_map.get(self.activity.name, self.activity.name),
             font_size=font_size,
             x=self.x,
             y=self.y - offset,
@@ -89,15 +95,15 @@ class ActivityDisplay:
         # Progress label
         # Format duration with appropriate time units
         if self.activity.duration < 60:
-            duration_text = f"{self.activity.duration:.1f} sec"
+            duration_text = f"For {self.activity.duration} seconds"
         elif self.activity.duration < 3600:
             minutes = int(self.activity.duration // 60)
             seconds = int(self.activity.duration % 60)
-            duration_text = f"{minutes}:{seconds:02d} min"
+            duration_text = f"For {minutes}:{seconds:02d} minutes"
         else:
             hours = int(self.activity.duration // 3600)
             minutes = int((self.activity.duration % 3600) // 60)
-            duration_text = f"{hours}:{minutes:02d} hr"
+            duration_text = f"For {hours}:{minutes:02d} hours"
 
         self.duration_label = pyglet.text.Label(
             duration_text,
