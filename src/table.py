@@ -5,7 +5,7 @@ from src.training import Activity, Stage
 from src.util import load_activity_images
 
 COLUMN_PADDING = 20
-ACTIVITY_TYPES = ["jumpingjack", "running", "lifting", "rowing"]
+ACTIVITY_TYPES = ["jumpingjack", "running", "lifting", "rowing"] # TODO: Should be dynamically read from model labels so new activities can be added without code changes
 
 
 class ActivityDisplay:
