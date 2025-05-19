@@ -1,5 +1,4 @@
 from typing import Deque, Tuple
-from pyglet.gl import glClearColor
 import pandas as pd
 import click
 import pyglet
@@ -14,7 +13,6 @@ from src.table import StageDisplay
 from src.info import SessionInfoDisplay
 from src.training import TrainingSession
 import numpy as np
-import time
 
 
 class FitnessTrainer(Window):
@@ -28,7 +26,7 @@ class FitnessTrainer(Window):
         model: ActivityRecognizer,
         sensor: SensorUDP,
         session: TrainingSession,
-        window_seconds: float = 1,
+        window_seconds: float = 1.3,
         sample_rate: int = Config.UPDATE_RATE,
     ):
         super().__init__(Config.window_width, Config.window_height, "Fitness Trainer")
@@ -79,22 +77,19 @@ class FitnessTrainer(Window):
         """Use distance from idle state to determine if the device is idle."""
 
         if len(window) < self.window_size:
-            return (True, 0.0)  # Not enough data to make a prediction
+            return (True, 0.0)  # Not enough data check if idle yet
 
         acc = window[["acc_x", "acc_y", "acc_z"]].values
-
         mag_acc = np.linalg.norm(acc, axis=1)
-
         std_acc = np.std(mag_acc)
 
-        # candidate idle if both below threshold
-        is_candidate_idle = std_acc < threshold
-        # hysteresis counters (persist across calls on the class)
+        is_idle = std_acc < threshold
+
         if not hasattr(self, "_idle_frames"):
             self._idle_frames = 0
             self._active_frames = 0
 
-        if is_candidate_idle:
+        if is_idle:
             self._idle_frames += 1
             self._active_frames = 0
         else:
@@ -103,7 +98,7 @@ class FitnessTrainer(Window):
 
         min_idle_frames = int(min_idle_sec * Config.UPDATE_RATE)
         min_active_frames = int(min_active_sec * Config.UPDATE_RATE)
-        # only flip to idle once we've seen enough idle frames
+
         if self._idle_frames >= min_idle_frames:
             self._state = "idle"
         elif self._active_frames >= min_active_frames:
