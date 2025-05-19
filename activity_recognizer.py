@@ -61,8 +61,11 @@ class Preprocessor:
         for file in all_files:
             filename = os.path.basename(file)
             activity = filename.split("-")[1]
-            df = pd.read_csv(file)
-
+            try:
+                df = pd.read_csv(file)
+            except Exception as e:
+                print(f"Error reading {file}: {e}")
+                continue
             for start in range(0, len(df) - self.window_size + 1, self.step_size):
                 window = df.iloc[start : start + self.window_size]
                 features = self.get_features(window)
