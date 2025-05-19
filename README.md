@@ -79,6 +79,10 @@ The top half shows all activities in the current stage with a progress meter and
 
 ### Known Issues
 
+**DIPPID Client Freeze**
+
+On my android device the DIPPID app freezes a few seconds after the screen goes to sleep. If the activity meter suddenly drops or is inconsistent with your movement, check if the DIPPID android app is frozen. If this happens you can simply restart the android app and the `Fitness Trainer` will continue where you left off.
+
 **Idle Detection**
 
     Context:
