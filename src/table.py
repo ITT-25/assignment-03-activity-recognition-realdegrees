@@ -71,16 +71,20 @@ class ActivityDisplay:
         # Calculate available space for image
         progress_bar_height = 15
         progress_label_height = font_size + margin
-        label_height = self.label.content_height + margin
-        available_height = self.height - label_height - (progress_label_height + margin) - (margin * 4)
 
         # Create and scale image sprite
-        self.image_sprite = pyglet.sprite.Sprite(self.images[0], x=self.x, y=self.y - offset, batch=self.batch)
-        self.target_image_height = available_height
-        self.target_image_width = self.width * 0.8
-        self._scale_image(available_height)
+        self.image_sprites = [
+            pyglet.sprite.Sprite(
+                self.images[i], x=self.x, y=self.y - offset, batch=self.batch)
+            for i in range(len(self.images))
+        ]
+        for i, sprite in enumerate(self.image_sprites):
+            sprite.scale = (self.width - margin * 2) / sprite.width
+            sprite.x = self.x - sprite.width / 2
+            if i != 0:
+                sprite.visible = False  # Hide all but the first image
 
-        offset += margin + self.image_sprite.height
+        offset += margin + self.image_sprites[0].image.height * self.image_sprites[0].scale
 
         # Progress label
         # Format duration with appropriate time units
@@ -126,14 +130,6 @@ class ActivityDisplay:
             batch=self.batch,
         )
 
-    def _scale_image(self, available_height: int):
-        # Reset scale to original size first to get original dimensions
-        self.image_sprite.scale = 1.0
-
-        # Calculate scale factor that maintains aspect ratio and fits within available height
-        scale = min(available_height / self.image_sprite.height, self.width * 0.8 / self.image_sprite.width)
-        self.image_sprite.scale = scale
-
     def update(self, dt: float):
         if self.activity is None:
             return
@@ -149,17 +145,18 @@ class ActivityDisplay:
             current_index = getattr(self, "_current_image_index", 0)
             next_index = (current_index + 1) % len(self.images)
             self._current_image_index = next_index
-            self.image_sprite.image = self.images[next_index]
-            self.image_sprite.x = self.x
-            self._scale_image(self.target_image_height)
+            for i, sprite in enumerate(self.image_sprites):
+                sprite.visible = (i == next_index)
 
         # Update progress bar
-        self.progress_bar.width = self.width * (self.completion / self.activity.duration)
+        self.progress_bar.width = self.width * \
+            (self.completion / self.activity.duration)
 
         # Change style based on completion
         if is_complete:
             self.background.color = Config.SUCCESS_COLOR
-            self.image_sprite.opacity = 150
+            for sprite in self.image_sprites:
+                sprite.opacity = 120
 
 
 class StageDisplay:
@@ -168,7 +165,8 @@ class StageDisplay:
     def __init__(self, batch: pyglet.graphics.Batch):
         self.batch = batch
         self.columns: List[ActivityDisplay] = []
-        self.column_width = (Config.window_width - len(ACTIVITY_TYPES) * Config.COLUMN_GAP) / len(ACTIVITY_TYPES)
+        self.column_width = (Config.window_width - len(ACTIVITY_TYPES)
+                             * Config.COLUMN_GAP) / len(ACTIVITY_TYPES)
         self.column_height = Config.window_height * 0.6
 
     def set_data(self, stage: Optional[Stage]):
@@ -177,7 +175,8 @@ class StageDisplay:
 
         # Collect active and empty activities
         for i, activity_type in enumerate(ACTIVITY_TYPES):
-            activity = next((a for a in stage.activities if a.name == activity_type), None) if stage else None
+            activity = next((a for a in stage.activities if a.name ==
+                            activity_type), None) if stage else None
             self.columns.append(
                 ActivityDisplay(
                     self.batch,
@@ -205,6 +204,7 @@ class StageDisplay:
         if not self.stage:
             return
 
-        activity = next((a for a in self.columns if a.activity and a.activity.name == activity_name), None)
+        activity = next(
+            (a for a in self.columns if a.activity and a.activity.name == activity_name), None)
         if activity:
             activity.update(dt)
