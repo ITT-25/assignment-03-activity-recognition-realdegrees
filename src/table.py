@@ -5,7 +5,12 @@ from src.training import Activity, Stage
 from src.util import load_activity_images
 
 COLUMN_PADDING = 20
-ACTIVITY_TYPES = ["jumpingjack", "running", "lifting", "rowing"] # TODO: Should be dynamically read from model labels so new activities can be added without code changes
+ACTIVITY_TYPES = [
+    "jumpingjack",
+    "running",
+    "lifting",
+    "rowing",
+]  # TODO: Should be dynamically read from model labels so new activities can be added without code changes
 
 
 class ActivityDisplay:
@@ -164,7 +169,7 @@ class StageDisplay:
         self.batch = batch
         self.columns: List[ActivityDisplay] = []
         self.column_width = (Config.window_width - len(ACTIVITY_TYPES) * Config.COLUMN_GAP) / len(ACTIVITY_TYPES)
-        self.column_height = Config.window_height * 0.7
+        self.column_height = Config.window_height * 0.6
 
     def set_data(self, stage: Optional[Stage]):
         self.stage = stage

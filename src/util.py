@@ -32,7 +32,15 @@ def lerp_colors(colors: list[Tuple[int, int, int]], t: float) -> Tuple[int, int,
     )
 
 
+# Cache for storing loaded images by activity name
+_image_cache = {}
+
+
 def load_activity_images(activity_name: str) -> list[pyglet.image.AbstractImage]:
+    # Return cached images if already loaded
+    if activity_name in _image_cache:
+        return _image_cache[activity_name]
+
     images = []
     for i in range(1, 3):
         try:
@@ -44,4 +52,7 @@ def load_activity_images(activity_name: str) -> list[pyglet.image.AbstractImage]
         # Set anchor points to center-bottom for consistent positioning
         img.anchor_x, img.anchor_y = img.width // 2, img.height
         images.append(img)
+
+    # Cache the images before returning
+    _image_cache[activity_name] = images
     return images

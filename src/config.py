@@ -4,6 +4,7 @@ class Config:
     COLUMN_GAP: int = 10
     IMAGE_ANIMATION_INTERVAL: float = 0.5
     UPDATE_RATE: int = 60
+    STAGE_TRANSITION_DURATION: float = 1.5
     TEXT_COLOR: tuple[int, int, int] = (255, 255, 255, 255)
     PRIMARY_COLOR: tuple[int, int, int] = (31, 31, 31, 255)
     SECONDARY_COLOR: tuple[int, int, int] = (49, 49, 49, 255)

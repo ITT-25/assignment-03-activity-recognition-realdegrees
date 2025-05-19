@@ -154,7 +154,7 @@ class SessionInfoDisplay:
         self.batch = batch
         self.session = session
         self.stage_display = stage_display
-        self.info_area_height = Config.window_height * 0.3  # Bottom 30% of screen
+        self.info_area_height = Config.window_height * 0.4  # Bottom 30% of screen
 
         margin = 10
         gap = 2

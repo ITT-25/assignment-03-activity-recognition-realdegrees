@@ -14,11 +14,14 @@ from src.table import StageDisplay
 from src.info import SessionInfoDisplay
 from src.training import TrainingSession
 import numpy as np
+import time
 
 
 class FitnessTrainer(Window):
     _state: str = "idle"
     _idle_frames: int = 0
+    _active_frames: int = 0
+    _current_stage_completed_duration: float = 0.0
 
     def __init__(
         self,
@@ -71,7 +74,7 @@ class FitnessTrainer(Window):
         return super().on_resize(width, height)
 
     def device_idle(
-        self, window: pd.DataFrame, threshold: float = 0.15, min_idle_sec: float = 0.7
+        self, window: pd.DataFrame, threshold: float = 0.15, min_idle_sec: float = 1, min_active_sec: float = 0.4
     ) -> Tuple[bool, float]:
         """Use distance from idle state to determine if the device is idle."""
 
@@ -99,11 +102,11 @@ class FitnessTrainer(Window):
             self._idle_frames = 0
 
         min_idle_frames = int(min_idle_sec * Config.UPDATE_RATE)
-
+        min_active_frames = int(min_active_sec * Config.UPDATE_RATE)
         # only flip to idle once we've seen enough idle frames
         if self._idle_frames >= min_idle_frames:
             self._state = "idle"
-        elif self._active_frames >= min_idle_frames:
+        elif self._active_frames >= min_active_frames:
             self._state = "active"
 
         return self._state == "idle", min(1, std_acc / threshold)
@@ -119,14 +122,19 @@ class FitnessTrainer(Window):
 
     def update(self, dt: float):
         self.session_info_display.update(dt)
-        # Handle stage logic and update both the stage display and the overview/info display
+
         if self.stage_display.is_complete():
+            self._current_stage_completed_duration += dt
+
+        # Handle stage logic and update both the stage display and the overview/info display if stage transition is done
+        if self._current_stage_completed_duration >= Config.STAGE_TRANSITION_DURATION:
             self.current_stage += 1
             if self.current_stage >= len(self.session.stages):
                 self.stage_display.set_data(None)
                 return
 
             self.stage_display.set_data(self.session.stages[self.current_stage])
+            self._current_stage_completed_duration = 0.0
             return
 
         # Get the current sensor value and append it to the buffers
@@ -188,7 +196,12 @@ def main(data_dir: str, model_output: str, port: int, session_file: str):
         model.train(model_output_path=model_output)
     model.load(model_path=model_output)
 
+    print("Model loaded successfully")
+
     session = TrainingSession(session_file)
+
+    print("Loaded training session successfully")
+
     FitnessTrainer(model, SensorUDP(port), session)
 
 
