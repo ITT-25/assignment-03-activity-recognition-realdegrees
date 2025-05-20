@@ -73,7 +73,7 @@ class FitnessTrainer(Window):
         return super().on_resize(width, height)
 
     def device_idle(
-        self, window: pd.DataFrame, threshold: float = 0.3, min_idle_sec: float = 0.6, min_active_sec: float = 0.8
+        self, window: pd.DataFrame, threshold: float = 0.25, min_idle_sec: float = 0.6, min_active_sec: float = 0.8
     ) -> Tuple[bool, float]:
         """Use distance from idle state to determine if the device is idle."""
 
@@ -157,7 +157,7 @@ class FitnessTrainer(Window):
             return  # Not enough data to make a prediction or device is idle
 
         prediction, confidence = self.model.predict(window)
-        confidence_threshold_met = confidence >= 0.98
+        confidence_threshold_met = confidence >= 0.99
 
         # Add the current prediction to the buffer if confidence threshold is met
         if confidence_threshold_met:
