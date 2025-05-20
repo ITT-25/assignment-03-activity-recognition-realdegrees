@@ -1,4 +1,4 @@
-import sys
+import os
 from typing import Deque, Tuple
 import pandas as pd
 import click
@@ -176,7 +176,7 @@ class FitnessTrainer(Window):
 
     def on_close(self):
         self.sensor.disconnect()
-        sys.exit(0)  # Exit the application when the window is closed
+        os._exit(0)
 
 
 @click.command()
