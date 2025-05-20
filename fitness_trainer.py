@@ -73,7 +73,7 @@ class FitnessTrainer(Window):
         return super().on_resize(width, height)
 
     def device_idle(
-        self, window: pd.DataFrame, threshold: float = 0.15, min_idle_sec: float = 1, min_active_sec: float = 0.4
+        self, window: pd.DataFrame, threshold: float = 0.3, min_idle_sec: float = 0.6, min_active_sec: float = 0.8
     ) -> Tuple[bool, float]:
         """Use distance from idle state to determine if the device is idle."""
 

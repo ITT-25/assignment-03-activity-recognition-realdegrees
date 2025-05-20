@@ -83,8 +83,8 @@ class ActivityMeter:
 
 
 class StagePreviewDisplay:
-    width = 100
-    height = 20
+    width = 130
+    height = 30
     progress = 0.0
 
     def __init__(self, batch: pyglet.graphics.Batch, stage: Optional["Stage"] = None, x: int = 0, y: int = 0):
@@ -112,35 +112,36 @@ class StagePreviewDisplay:
         self.progress_bar.anchor_y = self.height
         self.label = pyglet.text.Label(
             stage.name,
-            font_size=10,
-            x=x + 2,
-            y=y - 2,
+            font_size=12,
+            x=x + 6,
+            y=y - 6,
             anchor_x="left",
             anchor_y="top",
             batch=batch,
             color=Config.TEXT_COLOR,
         )
         self.activity_preview_images: List[pyglet.image.AbstractImage] = [
-            load_activity_images(activity.name)[0] for activity in stage.activities
+            load_activity_images(activity.name)[1] for activity in stage.activities
         ]
         for image in self.activity_preview_images:
             image.anchor_x = image.width
             image.anchor_y = image.height
 
         self.images = []
-        x_offset = x + self.width + 10
+        margin = 10
+        x_offset = x + self.width + margin * 1.5
 
         for i, image in enumerate(self.activity_preview_images):
             # Create sprite with original image dimensions
             sprite = pyglet.sprite.Sprite(image, x=x + x_offset, y=y, batch=batch)
 
-            scale_factor = (self.height * 0.9) / image.height
+            scale_factor = self.height / image.height
             sprite.scale = scale_factor
 
             self.images.append(sprite)
 
             # Update x_offset for next sprite
-            x_offset += sprite.width + 2
+            x_offset += sprite.width + margin
 
     def set_progress(self, progress: float):
         self.progress = progress
@@ -175,7 +176,7 @@ class SessionInfoDisplay:
 
         self.stage_overview_label = pyglet.text.Label(
             "Training Session Overview",
-            font_size=12,
+            font_size=14,
             x=margin,
             y=self.info_area_height - margin,
             anchor_x="left",
