@@ -32,7 +32,6 @@ def lerp_colors(colors: list[Tuple[int, int, int]], t: float) -> Tuple[int, int,
     )
 
 
-
 def load_activity_images(activity_name: str) -> list[pyglet.image.AbstractImage]:
     # Return cached images if already loaded
     images = []

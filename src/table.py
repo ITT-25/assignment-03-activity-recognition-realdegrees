@@ -80,8 +80,7 @@ class ActivityDisplay:
 
         # Create and scale image sprite
         self.image_sprites = [
-            pyglet.sprite.Sprite(
-                self.images[i], x=self.x, y=self.y - offset, batch=self.batch)
+            pyglet.sprite.Sprite(self.images[i], x=self.x, y=self.y - offset, batch=self.batch)
             for i in range(len(self.images))
         ]
         for i, sprite in enumerate(self.image_sprites):
@@ -152,11 +151,10 @@ class ActivityDisplay:
             next_index = (current_index + 1) % len(self.images)
             self._current_image_index = next_index
             for i, sprite in enumerate(self.image_sprites):
-                sprite.visible = (i == next_index)
+                sprite.visible = i == next_index
 
         # Update progress bar
-        self.progress_bar.width = self.width * \
-            (self.completion / self.activity.duration)
+        self.progress_bar.width = self.width * (self.completion / self.activity.duration)
 
         # Change style based on completion
         if is_complete:
@@ -171,8 +169,7 @@ class StageDisplay:
     def __init__(self, batch: pyglet.graphics.Batch):
         self.batch = batch
         self.columns: List[ActivityDisplay] = []
-        self.column_width = (Config.window_width - len(ACTIVITY_TYPES)
-                             * Config.COLUMN_GAP) / len(ACTIVITY_TYPES)
+        self.column_width = (Config.window_width - len(ACTIVITY_TYPES) * Config.COLUMN_GAP) / len(ACTIVITY_TYPES)
         self.column_height = Config.window_height * 0.6
 
     def set_data(self, stage: Optional[Stage]):
@@ -181,8 +178,7 @@ class StageDisplay:
 
         # Collect active and empty activities
         for i, activity_type in enumerate(ACTIVITY_TYPES):
-            activity = next((a for a in stage.activities if a.name ==
-                            activity_type), None) if stage else None
+            activity = next((a for a in stage.activities if a.name == activity_type), None) if stage else None
             self.columns.append(
                 ActivityDisplay(
                     self.batch,
@@ -210,7 +206,6 @@ class StageDisplay:
         if not self.stage:
             return
 
-        activity = next(
-            (a for a in self.columns if a.activity and a.activity.name == activity_name), None)
+        activity = next((a for a in self.columns if a.activity and a.activity.name == activity_name), None)
         if activity:
             activity.update(dt)
