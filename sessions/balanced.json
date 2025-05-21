@@ -5,7 +5,7 @@
             "activities": [
                 {
                     "name": "running",
-                    "duration": 10
+                    "duration": 5
                 },
                 {
                     "name": "jumpingjack",
@@ -18,7 +18,7 @@
             "activities": [
                 {
                     "name": "lifting",
-                    "duration": 10
+                    "duration": 4
                 }
             ]
         },
@@ -27,7 +27,7 @@
             "activities": [
                 {
                     "name": "lifting",
-                    "duration": 8
+                    "duration": 3
                 }
             ]
         },
@@ -36,7 +36,7 @@
             "activities": [
                 {
                     "name": "lifting",
-                    "duration": 5
+                    "duration": 2
                 }
             ]
         },
@@ -45,15 +45,15 @@
             "activities": [
                 {
                     "name": "rowing",
-                    "duration": 30
+                    "duration": 5
                 },
                 {
                     "name": "running",
-                    "duration": 20
+                    "duration": 5
                 },
                 {
                     "name": "jumpingjack",
-                    "duration": 15
+                    "duration": 5
                 }
             ]
         }
