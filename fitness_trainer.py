@@ -1,4 +1,3 @@
-import os
 from typing import Deque, Optional, Tuple
 import pandas as pd
 import click
@@ -158,7 +157,7 @@ class FitnessTrainer(Window):
 
     def on_close(self):
         self.sensor.disconnect()
-        os._exit(0)
+        pyglet.app.exit()
 
 
 @click.command()
