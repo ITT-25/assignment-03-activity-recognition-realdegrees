@@ -17,6 +17,7 @@ import time
 from sklearn.preprocessing import MinMaxScaler
 from src.config import Config
 
+
 class Preprocessor:
     def __init__(self, raw_data_dir: str):
         self.raw_data_dir = raw_data_dir
@@ -40,17 +41,17 @@ class Preprocessor:
         # Vector magnitudes
         acc_mag = np.sqrt(window["acc_x"] ** 2 + window["acc_y"] ** 2 + window["acc_z"] ** 2)
         gyro_mag = np.sqrt(window["gyro_x"] ** 2 + window["gyro_y"] ** 2 + window["gyro_z"] ** 2)
-        features["acc_mag_mean"] = np.mean(acc_mag) # ! low pca variance
-        features["acc_mag_std"] = np.std(acc_mag) # ! low pca variance
+        features["acc_mag_mean"] = np.mean(acc_mag)  # ! low pca variance
+        features["acc_mag_std"] = np.std(acc_mag)  # ! low pca variance
         features["acc_mag_energy"] = np.sum(acc_mag**2) / len(acc_mag)
-        features["acc_mag_median"] = np.median(acc_mag) # ! low pca variance
+        features["acc_mag_median"] = np.median(acc_mag)  # ! low pca variance
         features["gyro_mag_mean"] = np.mean(gyro_mag)
         features["gyro_mag_std"] = np.std(gyro_mag)
         features["gyro_mag_energy"] = np.sum(gyro_mag**2) / len(gyro_mag)
         features["gyro_mag_median"] = np.median(gyro_mag)
-        
+
         # Could add more features like gyro/acc correlation or frequency domain features but results are already pretty good and didn't change much with more features
-     
+
         # ! This had a negative effect on the model
         # Frequency domain features
         # fft_acc = np.fft.fft(window[["acc_x", "acc_y", "acc_z"]].values, axis=0)
@@ -78,7 +79,7 @@ class Preprocessor:
             except Exception as e:
                 print(f"Error reading {file}: {e}")
                 continue
-            
+
             # Create subsets of each dataset and extract features for each
             for start in range(0, len(df) - self.window_size + 1, self.step_size):
                 window = df.iloc[start : start + self.window_size]
@@ -109,8 +110,7 @@ class ActivityRecognizer:
 
         # Use train_test_split to have a final test set for evaluation
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-        
-        
+
         # Train model using GridSearchCV for hyperparameter tuning
         clf = GridSearchCV(
             SVC(probability=True, decision_function_shape="ovo", kernel="poly"),
@@ -123,7 +123,7 @@ class ActivityRecognizer:
             scoring="accuracy",
             cv=5,
             verbose=10,
-            n_jobs=joblib.cpu_count() // 2
+            n_jobs=joblib.cpu_count() // 2,
         )
 
         clf.fit(X_train, y_train)

@@ -66,9 +66,7 @@ class FitnessTrainer(Window):
         Config.window_height = height
         return super().on_resize(width, height)
 
-    def device_idle(
-        self, window: pd.DataFrame, threshold: float = 0.15
-    ) -> Tuple[bool, float]:
+    def device_idle(self, window: pd.DataFrame, threshold: float = 0.15) -> Tuple[bool, float]:
         """Use distance from idle state to determine if the device is idle."""
 
         if len(window) < Config.IDLE_DATA_SUBSET_SIZE:
@@ -88,7 +86,9 @@ class FitnessTrainer(Window):
         if len(self.prediction_buffer) < self.prediction_buffer.maxlen:
             return False
 
-        activity_count = sum(1 for activity in self.prediction_buffer if activity == activity_name and activity is not None)
+        activity_count = sum(
+            1 for activity in self.prediction_buffer if activity == activity_name and activity is not None
+        )
         activity_ratio = activity_count / len(self.prediction_buffer)
 
         return activity_ratio >= 0.5
