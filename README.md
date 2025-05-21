@@ -54,6 +54,9 @@ At the first start of the application the model is trained using the training da
 It uses all `.csv` files in the folder. All files **must** follow this naming scheme `<name>-<activity>-<setnumber>.csv` or training will fail (the \<activity> is used as `y` for the classifier).  
 Subsequent launches of the application will load the model from disk instead of retraining. The first launch can take a while due to cross-validation of parameters to find the best model.  
 
+> 💡 A pre trained model is available in the repository at [svm_model-pretrained.pkl](./svm_model-pretrained.pkl)  
+Rename it to `svm_model.plk` for the program to use it instead of training if your device takes too long.
+
 The fitness trainer application was designed with training set configurations in json format.  
 The default session file [balanced.json](./sessions/balanced.json) includes a full sample training session with all activites that the model has been trained on.  
 
