@@ -16,6 +16,7 @@ from DIPPID import SensorUDP
 import time
 from sklearn.preprocessing import MinMaxScaler
 from src.config import Config
+import scipy.stats as stats
 
 
 class Preprocessor:
@@ -26,44 +27,50 @@ class Preprocessor:
 
     def get_features(self, window: pd.DataFrame) -> dict:
         """
-        Extract baseline time-domain features and rotation independent variables
-        from accelerometer and gyroscope data in the given window.
+        Extract extended time-domain, frequency-domain, and statistical features
+        from accelerometer and gyroscope data for physical activity classification.
         """
+        
+        window.dropna(inplace=True)  # Drop NaN values to avoid errors in calculations
+        # Ensure the window is not empty
+        if window.empty:
+            return {}
+        
         features = {}
-        # Time-domain features for each axis
-        for axis in ["acc_x", "acc_y", "acc_z", "gyro_x", "gyro_y", "gyro_z"]:
-            signal = window[axis].values
-            features[f"{axis}_mean"] = np.mean(signal)
-            features[f"{axis}_std"] = np.std(signal)
-            features[f"{axis}_energy"] = np.sum(signal**2) / len(signal)
-            features[f"{axis}_median"] = np.median(signal)
 
         # Vector magnitudes
         acc_mag = np.sqrt(window["acc_x"] ** 2 + window["acc_y"] ** 2 + window["acc_z"] ** 2)
         gyro_mag = np.sqrt(window["gyro_x"] ** 2 + window["gyro_y"] ** 2 + window["gyro_z"] ** 2)
-        features["acc_mag_mean"] = np.mean(acc_mag)  # ! low pca variance
-        features["acc_mag_std"] = np.std(acc_mag)  # ! low pca variance
-        features["acc_mag_energy"] = np.sum(acc_mag**2) / len(acc_mag)
-        features["acc_mag_median"] = np.median(acc_mag)  # ! low pca variance
-        features["gyro_mag_mean"] = np.mean(gyro_mag)
-        features["gyro_mag_std"] = np.std(gyro_mag)
-        features["gyro_mag_energy"] = np.sum(gyro_mag**2) / len(gyro_mag)
-        features["gyro_mag_median"] = np.median(gyro_mag)
 
-        # Could add more features like gyro/acc correlation or frequency domain features but results are already pretty good and didn't change much with more features
+        for label, mag in zip(["acc", "gyro"], [acc_mag, gyro_mag]):
+            fft_mag = np.abs(np.fft.fft(mag))
+            features[f"{label}_mag_mean"] = np.mean(mag)
+            features[f"{label}_mag_std"] = np.std(mag)
+            features[f"{label}_mag_energy"] = np.sum(mag**2) / len(mag)
+            features[f"{label}_mag_median"] = np.median(mag)
+            features[f"{label}_mag_min"] = np.min(mag)
+            features[f"{label}_mag_max"] = np.max(mag)
+            features[f"{label}_mag_iqr"] = stats.iqr(mag)
+            features[f"{label}_mag_skew"] = stats.skew(mag)
+            features[f"{label}_mag_kurtosis"] = stats.kurtosis(mag)
+            features[f"{label}_mag_freq_mean"] = np.mean(fft_mag)
+            features[f"{label}_mag_freq_std"] = np.std(fft_mag)
+            features[f"{label}_mag_freq_energy"] = np.sum(fft_mag**2) / len(fft_mag)
+            features[f"{label}_mag_freq_median"] = np.median(fft_mag)
 
-        # ! This had a negative effect on the model
-        # Frequency domain features
-        # fft_acc = np.fft.fft(window[["acc_x", "acc_y", "acc_z"]].values, axis=0)
-        # fft_gyro = np.fft.fft(window[["gyro_x", "gyro_y", "gyro_z"]].values, axis=0)
-        # features["acc_freq_mean"] = np.mean(np.abs(fft_acc))
-        # features["gyro_freq_mean"] = np.mean(np.abs(fft_gyro))
-        # features["acc_freq_std"] = np.std(np.abs(fft_acc))
-        # features["gyro_freq_std"] = np.std(np.abs(fft_gyro))
-        # features["acc_freq_energy"] = np.sum(np.abs(fft_acc)**2) / len(fft_acc)
-        # features["gyro_freq_energy"] = np.sum(np.abs(fft_gyro)**2) / len(fft_gyro)
-        # features["acc_freq_median"] = np.median(np.abs(fft_acc))
-        # features["gyro_freq_median"] = np.median(np.abs(fft_gyro))
+        # Correlation features
+        # Within sensor correlations (acc-acc, gyro-gyro)
+        for (a1, a2) in [("acc_x", "acc_y"), ("acc_y", "acc_z"), ("acc_x", "acc_z"),
+                ("gyro_x", "gyro_y"), ("gyro_y", "gyro_z"), ("gyro_x", "gyro_z")]:
+            features[f"corr_{a1}_{a2}"] = np.corrcoef(window[a1], window[a2])[0, 1]
+            
+        # Cross-sensor correlations (acc-gyro)
+        for acc_axis in ["acc_x", "acc_y", "acc_z"]:
+            for gyro_axis in ["gyro_x", "gyro_y", "gyro_z"]:
+                features[f"corr_{acc_axis}_{gyro_axis}"] = np.corrcoef(window[acc_axis], window[gyro_axis])[0, 1]
+                
+        # Correlation between magnitudes
+        features["corr_acc_mag_gyro_mag"] = np.corrcoef(acc_mag, gyro_mag)[0, 1]
 
         return features
 
@@ -113,9 +120,10 @@ class ActivityRecognizer:
 
         # Train model using GridSearchCV for hyperparameter tuning
         clf = GridSearchCV(
-            SVC(probability=True, decision_function_shape="ovo", kernel="poly"),
+            SVC(probability=True, decision_function_shape="ovo"),
             param_grid={
-                "C": [0.1, 0.5, 1],
+                "kernel": ["linear", "poly", "rbf"],
+                "C": [0.1, 0.5, 1, 5],
                 "gamma": [0.1, 0.5, 1],
                 "degree": [2, 3, 4],
                 "class_weight": ["balanced", None],
