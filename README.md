@@ -9,7 +9,7 @@
 
 # Gathering Training Data
 
-> ⚠️ The DIPPID android app sometimes becomes unresponsive after the phone's screen goes to sleep and has to be restarted. If the data gathering process does not react to button presses it is not an issue with this program but with the DIPPID android app!
+> ⚠️ The DIPPID android app sometimes becomes unresponsive after the phone's screen goes to sleep and has to be restarted. If the data gathering process does not react to button presses it is not an issue with this program but with the DIPPID android app. Restart the android app to continue.
 
 ```sh
 python gather_data.py --sets 5 --duration 10 --activitiy "rowing" --prefix "name"
@@ -43,6 +43,8 @@ This script will resample all `.csv` files in the `data` folder to **100 Hz**. (
 > 💡 If you want to run both at the same time you need to change the `--port` for one of them
 
 ## Usage
+
+> ⚠️ The DIPPID android app sometimes becomes unresponsive after the phone's screen goes to sleep and has to be restarted. If the process does not react to movement it is not an issue with this program but with the DIPPID android app. Restart the android app to continue.
 
 ```sh
 python fitness_trainer.py --session-file "sessions/balanced.json"
