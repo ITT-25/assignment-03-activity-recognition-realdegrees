@@ -88,7 +88,7 @@ class FitnessTrainer(Window):
         )
         activity_ratio = activity_count / len(self.prediction_buffer)
 
-        return activity_ratio >= 0.5
+        return activity_ratio >= 0.4
 
     def update(self, dt: float):
         self.session_info_display.update(dt)
@@ -132,7 +132,7 @@ class FitnessTrainer(Window):
             return  # Not enough data to make a prediction or device is idle
 
         prediction, confidence = self.model.predict(window)
-        confidence_threshold_met = confidence >= 0.99
+        confidence_threshold_met = confidence >= 0.995
 
         print(f"Prediction: {prediction} (Confidence: {confidence:.4f})                     ", end="\r")
 
