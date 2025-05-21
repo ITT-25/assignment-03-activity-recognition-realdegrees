@@ -93,7 +93,7 @@ class Preprocessor:
                 features["label"] = activity
                 data.append(features)
 
-        return pd.DataFrame(data)
+        return pd.DataFrame(data).dropna()
 
 
 class ActivityRecognizer:
@@ -102,7 +102,7 @@ class ActivityRecognizer:
     scaler: Optional[MinMaxScaler] = None
 
     def __init__(self, data: pd.DataFrame):
-        self.data: pd.DataFrame = data.dropna()
+        self.data: pd.DataFrame = data
         self.preprocessor = Preprocessor(raw_data_dir=None)
 
     def train(self, model_output_path="svm_model.pkl"):
