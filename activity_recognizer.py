@@ -31,7 +31,6 @@ class Preprocessor:
         from accelerometer and gyroscope data for physical activity classification.
         """
         
-        window.dropna(inplace=True)  # Drop NaN values to avoid errors in calculations
         # Ensure the window is not empty
         if window.empty:
             return {}

@@ -60,7 +60,7 @@ class FitnessTrainer(Window):
         pyglet.clock.schedule_interval(self.update, 1.0 / Config.UPDATE_RATE)
         pyglet.app.run()
 
-    def device_idle(self, window: pd.DataFrame, threshold: float = 0.15) -> Tuple[bool, float]:
+    def device_idle(self, window: pd.DataFrame, threshold: float = 0.1) -> Tuple[bool, float]:
         """Use distance from idle state to determine if the device is idle."""
 
         if len(window) < Config.IDLE_DATA_SUBSET_SIZE:
@@ -132,7 +132,7 @@ class FitnessTrainer(Window):
             return  # Not enough data to make a prediction or device is idle
 
         prediction, confidence = self.model.predict(window)
-        confidence_threshold_met = confidence >= 0.95
+        confidence_threshold_met = confidence >= 0.99
 
         print(f"Prediction: {prediction} (Confidence: {confidence:.4f})                     ", end="\r")
 
