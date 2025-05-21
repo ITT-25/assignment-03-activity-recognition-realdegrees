@@ -42,6 +42,8 @@ This script will resample all `.csv` files in the `data` folder to **100 Hz**. (
 > 💡 Activity recognition *can* be started as a console application seperately from the game using `python activity_recognizer`   
 > 💡 If you want to run both at the same time you need to change the `--port` for one of them
 
+> ⚠️ The training data already contains all data from the shared repo + some extra sets. Changing the training set could require manual adjustments of the confidence threshold using the `--confidence-threshold` parameter!
+
 ## Usage
 
 > ⚠️ The DIPPID android app sometimes becomes unresponsive after the phone's screen goes to sleep and has to be restarted. If the process does not react to movement it is not an issue with this program but with the DIPPID android app. Restart the android app to continue.

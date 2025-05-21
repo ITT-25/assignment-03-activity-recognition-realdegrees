@@ -24,11 +24,13 @@ class FitnessTrainer(Window):
         model: ActivityRecognizer,
         sensor: SensorUDP,
         session: TrainingSession,
+        confidence_threshold: float,
     ):
         super().__init__(Config.window_width, Config.window_height, "Fitness Trainer")
         self.model = model
         self.sensor = sensor
         self.session = session
+        self.confidence_threshold = confidence_threshold
         self.current_stage = 0
         self.acc_buffer: Deque[Tuple[float, float, float]] = deque(maxlen=Config.LIVE_DATA_SUBSET_SIZE)
         self.gyro_buffer: Deque[Tuple[float, float, float]] = deque(maxlen=Config.LIVE_DATA_SUBSET_SIZE)
@@ -132,7 +134,7 @@ class FitnessTrainer(Window):
             return  # Not enough data to make a prediction or device is idle
 
         prediction, confidence = self.model.predict(window)
-        confidence_threshold_met = confidence >= 0.995
+        confidence_threshold_met = confidence >= self.confidence_threshold
 
         print(f"Prediction: {prediction} (Confidence: {confidence:.4f})                     ", end="\r")
 
@@ -163,7 +165,8 @@ class FitnessTrainer(Window):
 @click.option("--model-output", default="svm_model.pkl", help="Path to save the trained model", type=str)
 @click.option("--port", default=5700, help="Port for the UDP sensor", type=int)
 @click.option("--session-file", default="sessions/balanced.json", help="Path to the session file", type=str)
-def main(data_dir: str, model_output: str, port: int, session_file: str):
+@click.option("--confidence-threshold", default=0.995, help="Confidence threshold for activity recognition (Default: 0.995)", type=float)
+def main(data_dir: str, model_output: str, port: int, session_file: str, confidence_threshold: float):
     # Read training data
     preprocessor = Preprocessor(data_dir)
     processed_data = preprocessor.process_all_files()
@@ -186,7 +189,7 @@ def main(data_dir: str, model_output: str, port: int, session_file: str):
 
     print("Loading UI please wait...", end="\r")
     # Start the fitness trainer (pyglet window)
-    FitnessTrainer(model, SensorUDP(port), session)
+    FitnessTrainer(model, SensorUDP(port), session, confidence_threshold)
 
 
 if __name__ == "__main__":
