@@ -6,7 +6,7 @@ import numpy as np
 from glob import glob
 from typing import Deque, Optional, Tuple
 from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.svm import SVC
 from sklearn.metrics import classification_report, accuracy_score
 import joblib
@@ -15,15 +15,15 @@ from collections import deque
 from DIPPID import SensorUDP
 import time
 from sklearn.preprocessing import MinMaxScaler
-
+from src.config import Config
 
 class Preprocessor:
-    def __init__(self, raw_data_dir, window_size=100, step_size=50):
+    def __init__(self, raw_data_dir: str):
         self.raw_data_dir = raw_data_dir
-        self.window_size = window_size
-        self.step_size = step_size
+        self.window_size = Config.TRAINING_DATA_SUBSET_SIZE
+        self.step_size = int(Config.TRAINING_DATA_SUBSET_SIZE * 0.8)
 
-    def get_features(self, window: pd.DataFrame, fs: float = 50.0) -> dict:
+    def get_features(self, window: pd.DataFrame) -> dict:
         """
         Extract baseline time-domain features and rotation independent variables
         from accelerometer and gyroscope data in the given window.
@@ -40,16 +40,29 @@ class Preprocessor:
         # Vector magnitudes
         acc_mag = np.sqrt(window["acc_x"] ** 2 + window["acc_y"] ** 2 + window["acc_z"] ** 2)
         gyro_mag = np.sqrt(window["gyro_x"] ** 2 + window["gyro_y"] ** 2 + window["gyro_z"] ** 2)
-        features["acc_mag_mean"] = np.mean(acc_mag)
-        features["acc_mag_std"] = np.std(acc_mag)
+        features["acc_mag_mean"] = np.mean(acc_mag) # ! low pca variance
+        features["acc_mag_std"] = np.std(acc_mag) # ! low pca variance
         features["acc_mag_energy"] = np.sum(acc_mag**2) / len(acc_mag)
-        features["acc_mag_median"] = np.median(acc_mag)
+        features["acc_mag_median"] = np.median(acc_mag) # ! low pca variance
         features["gyro_mag_mean"] = np.mean(gyro_mag)
         features["gyro_mag_std"] = np.std(gyro_mag)
         features["gyro_mag_energy"] = np.sum(gyro_mag**2) / len(gyro_mag)
         features["gyro_mag_median"] = np.median(gyro_mag)
-
+        
         # Could add more features like gyro/acc correlation or frequency domain features but results are already pretty good and didn't change much with more features
+     
+        # ! This had a negative effect on the model
+        # Frequency domain features
+        # fft_acc = np.fft.fft(window[["acc_x", "acc_y", "acc_z"]].values, axis=0)
+        # fft_gyro = np.fft.fft(window[["gyro_x", "gyro_y", "gyro_z"]].values, axis=0)
+        # features["acc_freq_mean"] = np.mean(np.abs(fft_acc))
+        # features["gyro_freq_mean"] = np.mean(np.abs(fft_gyro))
+        # features["acc_freq_std"] = np.std(np.abs(fft_acc))
+        # features["gyro_freq_std"] = np.std(np.abs(fft_gyro))
+        # features["acc_freq_energy"] = np.sum(np.abs(fft_acc)**2) / len(fft_acc)
+        # features["gyro_freq_energy"] = np.sum(np.abs(fft_gyro)**2) / len(fft_gyro)
+        # features["acc_freq_median"] = np.median(np.abs(fft_acc))
+        # features["gyro_freq_median"] = np.median(np.abs(fft_gyro))
 
         return features
 
@@ -65,6 +78,8 @@ class Preprocessor:
             except Exception as e:
                 print(f"Error reading {file}: {e}")
                 continue
+            
+            # Create subsets of each dataset and extract features for each
             for start in range(0, len(df) - self.window_size + 1, self.step_size):
                 window = df.iloc[start : start + self.window_size]
                 features = self.get_features(window)
@@ -94,15 +109,29 @@ class ActivityRecognizer:
 
         # Use train_test_split to have a final test set for evaluation
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-        # Parameters were selected on the best parameters found by a grid search with 3000+ combinations
-        clf = SVC(probability=True, kernel="rbf", decision_function_shape="ovo", C=10, gamma=10)
+        
+        
+        # Train model using GridSearchCV for hyperparameter tuning
+        clf = GridSearchCV(
+            SVC(probability=True, decision_function_shape="ovo", kernel="poly"),
+            param_grid={
+                "C": [0.1, 0.5, 1],
+                "gamma": [0.1, 0.5, 1],
+                "degree": [2, 3, 4],
+                "class_weight": ["balanced", None],
+            },
+            scoring="accuracy",
+            cv=5,
+            verbose=10,
+            n_jobs=joblib.cpu_count() // 2
+        )
 
         clf.fit(X_train, y_train)
 
         # Evaluate on the test set with the best model
         y_pred = clf.predict(X_test)
-
+        print("Best parameters found: ", clf.best_params_)
+        print("Best cross-validation score: ", clf.best_score_)
         print("Classification Report:")
         print(classification_report(encoder.inverse_transform(y_test), encoder.inverse_transform(y_pred)))
         print("Accuracy:", accuracy_score(encoder.inverse_transform(y_test), encoder.inverse_transform(y_pred)))

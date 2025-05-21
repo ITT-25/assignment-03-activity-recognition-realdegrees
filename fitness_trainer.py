@@ -1,5 +1,5 @@
 import os
-from typing import Deque, Tuple
+from typing import Deque, Optional, Tuple
 import pandas as pd
 import click
 import pyglet
@@ -18,8 +18,6 @@ import numpy as np
 
 class FitnessTrainer(Window):
     _state: str = "idle"
-    _idle_frames: int = 0
-    _active_frames: int = 0
     _current_stage_completed_duration: float = 0.0
 
     def __init__(
@@ -27,21 +25,17 @@ class FitnessTrainer(Window):
         model: ActivityRecognizer,
         sensor: SensorUDP,
         session: TrainingSession,
-        window_seconds: float = 1.3,
-        sample_rate: int = Config.UPDATE_RATE,
     ):
         super().__init__(Config.window_width, Config.window_height, "Fitness Trainer")
         self.model = model
         self.sensor = sensor
-        self.window_size = int(window_seconds * sample_rate)
-        self.sample_rate = sample_rate
         self.session = session
         self.current_stage = 0
-        self.acc_buffer: Deque[Tuple[float, float, float]] = deque(maxlen=self.window_size)
-        self.gyro_buffer: Deque[Tuple[float, float, float]] = deque(maxlen=self.window_size)
+        self.acc_buffer: Deque[Tuple[float, float, float]] = deque(maxlen=Config.LIVE_DATA_SUBSET_SIZE)
+        self.gyro_buffer: Deque[Tuple[float, float, float]] = deque(maxlen=Config.LIVE_DATA_SUBSET_SIZE)
 
         # Activity prediction buffer and threshold
-        self.prediction_buffer: Deque[str] = deque(maxlen=self.window_size // 4)
+        self.prediction_buffer: Deque[Optional[str]] = deque(maxlen=Config.LIVE_DATA_SUBSET_SIZE // 4)
 
         # Init graphics stuff
         self.batch = Batch()
@@ -64,7 +58,7 @@ class FitnessTrainer(Window):
         print(f"DIPPID server listening on {get_ip()}:{self.sensor._port}")
 
         # Start the pyglet loop
-        pyglet.clock.schedule_interval(self.update, 1.0 / self.sample_rate)
+        pyglet.clock.schedule_interval(self.update, 1.0 / Config.UPDATE_RATE)
         pyglet.app.run()
 
     def on_resize(self, width, height):
@@ -73,11 +67,11 @@ class FitnessTrainer(Window):
         return super().on_resize(width, height)
 
     def device_idle(
-        self, window: pd.DataFrame, threshold: float = 0.25, min_idle_sec: float = 0.6, min_active_sec: float = 0.8
+        self, window: pd.DataFrame, threshold: float = 0.15
     ) -> Tuple[bool, float]:
         """Use distance from idle state to determine if the device is idle."""
 
-        if len(window) < self.window_size:
+        if len(window) < Config.IDLE_DATA_SUBSET_SIZE:
             return (True, 0.0)  # Not enough data check if idle yet
 
         acc = window[["acc_x", "acc_y", "acc_z"]].values
@@ -86,24 +80,7 @@ class FitnessTrainer(Window):
 
         is_idle = std_acc < threshold
 
-        if not hasattr(self, "_idle_frames"):
-            self._idle_frames = 0
-            self._active_frames = 0
-
-        if is_idle:
-            self._idle_frames += 1
-            self._active_frames = 0
-        else:
-            self._active_frames += 1
-            self._idle_frames = 0
-
-        min_idle_frames = int(min_idle_sec * Config.UPDATE_RATE)
-        min_active_frames = int(min_active_sec * Config.UPDATE_RATE)
-
-        if self._idle_frames >= min_idle_frames:
-            self._state = "idle"
-        elif self._active_frames >= min_active_frames:
-            self._state = "active"
+        self._state = "idle" if is_idle else "active"
 
         return self._state == "idle", min(1, std_acc / threshold)
 
@@ -111,10 +88,10 @@ class FitnessTrainer(Window):
         if len(self.prediction_buffer) < self.prediction_buffer.maxlen:
             return False
 
-        activity_count = sum(1 for activity in self.prediction_buffer if activity == activity_name)
+        activity_count = sum(1 for activity in self.prediction_buffer if activity == activity_name and activity is not None)
         activity_ratio = activity_count / len(self.prediction_buffer)
 
-        return activity_ratio >= 0.6
+        return activity_ratio >= 0.5
 
     def update(self, dt: float):
         self.session_info_display.update(dt)
@@ -153,15 +130,20 @@ class FitnessTrainer(Window):
         window = pd.DataFrame(data)
         is_idle, idle_threshold_ratio = self.device_idle(window)
         self.session_info_display.activity_meter.update(dt, idle_threshold_ratio)
-        if len(self.acc_buffer) < self.window_size or is_idle:
+        if len(self.acc_buffer) < Config.LIVE_DATA_SUBSET_SIZE or is_idle:
+            self.prediction_buffer.append(None)
             return  # Not enough data to make a prediction or device is idle
 
         prediction, confidence = self.model.predict(window)
-        confidence_threshold_met = confidence >= 0.99
+        confidence_threshold_met = confidence >= 0.95
+
+        print(f"Prediction: {prediction} (Confidence: {confidence:.4f})                     ", end="\r")
 
         # Add the current prediction to the buffer if confidence threshold is met
         if confidence_threshold_met:
             self.prediction_buffer.append(prediction)
+        else:
+            self.prediction_buffer.append(None)
 
         # Check if the current activity maintains a majority in the prediction buffer
         activity_meets_majority = self.is_activity_majority(prediction)
