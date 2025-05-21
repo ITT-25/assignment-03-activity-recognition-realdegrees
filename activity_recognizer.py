@@ -153,6 +153,9 @@ class ActivityRecognizer:
     def predict(self, window: pd.DataFrame) -> Tuple[str, float]:
         features = self.preprocessor.get_features(window)
         X = pd.DataFrame([features])
+        X = X.dropna()
+        if X.empty:
+            return "Unknown", 0.0
         X = self.scaler.transform(X)
         pred = self.model.predict(X)
         probabilities = self.model.predict_proba(X)
