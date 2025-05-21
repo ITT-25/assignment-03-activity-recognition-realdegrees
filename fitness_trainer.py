@@ -60,11 +60,6 @@ class FitnessTrainer(Window):
         pyglet.clock.schedule_interval(self.update, 1.0 / Config.UPDATE_RATE)
         pyglet.app.run()
 
-    def on_resize(self, width, height):
-        Config.window_width = width
-        Config.window_height = height
-        return super().on_resize(width, height)
-
     def device_idle(self, window: pd.DataFrame, threshold: float = 0.15) -> Tuple[bool, float]:
         """Use distance from idle state to determine if the device is idle."""
 
@@ -76,12 +71,15 @@ class FitnessTrainer(Window):
         std_acc = np.std(mag_acc)
 
         is_idle = std_acc < threshold
-
         self._state = "idle" if is_idle else "active"
 
         return self._state == "idle", min(1, std_acc / threshold)
 
     def is_activity_majority(self, activity_name: str) -> bool:
+        """Check if the current activity is the majority in the prediction buffer.
+        
+        This is used to determine if the current activity is stable enough to be progressed."""
+        
         if len(self.prediction_buffer) < self.prediction_buffer.maxlen:
             return False
 
