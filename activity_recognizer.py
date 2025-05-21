@@ -31,8 +31,8 @@ class Preprocessor:
         from accelerometer and gyroscope data for physical activity classification.
         """
         
-        # Ensure the window is not empty
-        if window.empty:
+        # Ensure the window is not empty and has more than one unique value
+        if window.empty or len(window) < 2 or len(window["gyro_x"].unique()) < 2: 
             return {}
         
         features = {}
