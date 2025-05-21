@@ -39,7 +39,7 @@ This script will resample all `.csv` files in the `data` folder to **100 Hz**. (
 
 # Activity Recognition
 
-> 💡 Activity recognition *can* be started as a console application seperately from the game using `python activity_recognizer --window-seconds 1 --sample-rate 60` (Parameters optional)  
+> 💡 Activity recognition *can* be started as a console application seperately from the game using `python activity_recognizer`   
 > 💡 If you want to run both at the same time you need to change the `--port` for one of them
 
 ## Usage
@@ -97,7 +97,9 @@ On my android device the DIPPID app freezes a few seconds after the screen goes 
 
 Ultimately this results in random activities gaining progress when the user just wildly flings their phone around. (When an activity is actually physically executed correctly it always detected the correct activity during my testing). When the sensor device is laying flat or in a normally swinging/idle hand then idle detection works as well, just random movements are not filtered correctly (This could probably be fixed by using a different classifier or maybe adding "idle" as an activity so the SVC can detect it instead of manually coding idle detection)
 
-**Misclassification of Erratic Movements**
+**Misclassification**
 
 Wildly shaking the DIPPID sender results in a 100% confident classification of jumping jacks, this could either be an issue in the training data or type of ML classifier used.  
 With an SVC I tried filtering features via PCA variance and did extensive hyperparameter tuning, I also adjust data windows for both training and live data, none of these adjustments changed this specific behaviour.
+
+Also when holding the phone in an unconventional way the confidence of the models prediction usually drops. This is probably due to the wrong features but I tried a lot of things and came to the conclusion that std, mean, energy, mean yielded the best results and too many features started resulting in overfitting. (However most of the time, even holding the phone in ways that are (probably) not present in the training set, yielded a highly confident correct prediction)

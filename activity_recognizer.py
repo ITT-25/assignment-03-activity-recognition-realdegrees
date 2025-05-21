@@ -153,8 +153,8 @@ class ActivityRecognizer:
         return label, probabilities.max()
 
 
-def run_live_prediction(trainer: ActivityRecognizer, sensor: SensorUDP, window_seconds: float, sample_rate: int):
-    window_size = int(window_seconds * sample_rate)
+def run_live_prediction(trainer: ActivityRecognizer, sensor: SensorUDP):
+    window_size = Config.LIVE_DATA_SUBSET_SIZE
     acc_buffer: Deque[Tuple[float, float, float]] = deque(maxlen=window_size)
     gyro_buffer: Deque[Tuple[float, float, float]] = deque(maxlen=window_size)
 
@@ -185,7 +185,7 @@ def run_live_prediction(trainer: ActivityRecognizer, sensor: SensorUDP, window_s
                 prediction = trainer.predict(df_window)
                 print(f"Prediction: {prediction}                               ", end="\r")
 
-            time.sleep(1.0 / sample_rate)
+            time.sleep(1.0 / Config.UPDATE_RATE)
 
     except KeyboardInterrupt:
         print("\nActivity recognition stopped.")
@@ -195,8 +195,6 @@ def run_live_prediction(trainer: ActivityRecognizer, sensor: SensorUDP, window_s
 @click.option("--data-dir", default="data", help="Path to the raw CSV data directory", type=str)
 @click.option("--model-output", default="svm_model.pkl", help="Path to save the trained model", type=str)
 @click.option("--port", default=5700, help="Port for the UDP sensor", type=int)
-@click.option("--window-seconds", default=1, help="Window size in seconds for live prediction", type=float)
-@click.option("--sample-rate", default=60, help="Sample rate for live prediction", type=int)
 def main(data_dir: str, model_output: str, port: int, window_seconds: float, sample_rate: int):
     preprocessor = Preprocessor(data_dir)
     processed_data = preprocessor.process_all_files()
