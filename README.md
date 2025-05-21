@@ -79,24 +79,6 @@ The top half shows all activities in the current stage with a progress meter and
 
 ### Known Issues
 
-**DIPPID Client Freeze**
-
-On my android device the DIPPID app freezes a few seconds after the screen goes to sleep. If the activity meter suddenly drops or is inconsistent with your movement, check if the DIPPID android app is frozen. If this happens you can simply restart the android app and the `Fitness Trainer` will continue where you left off.
-
-**Idle Detection**
-
-    Context:
-    Since the model constantly predicts the activity for the given input it always outputs an activity.  
-    When the user e.g. leaves the sensor device on a table, the model still outputs one of the 4 activities. In order to avoid this I implemented a very basic idle check that checks the standard deviation of  
-    the accelerometer across a specific window + a hysteresis that only enables/disables idle state after the device has been in the respective state for a set duration.
-
-    I tried different metrics like frequency thresholding or checking for correlation between the parameters however nothing worked as well as simple std across the window.  
-    On top of that I had to set the threshold really low because of slow activities like lifting or rowing.  
-
-    I even use probabilities however those probabilities are often not reliable enough to properly detect if the model matched none of the labels. (Maybe I overfitted ¯\_(ツ)_/¯)
-
-Ultimately this results in random activities gaining progress when the user just wildly flings their phone around. (When an activity is actually physically executed correctly it always detected the correct activity during my testing). When the sensor device is laying flat or in a normally swinging/idle hand then idle detection works as well, just random movements are not filtered correctly (This could probably be fixed by using a different classifier or maybe adding "idle" as an activity so the SVC can detect it instead of manually coding idle detection)
-
 **Misclassification**
 
 Wildly shaking the DIPPID sender results in a 100% confident classification of jumping jacks, this could either be an issue in the training data or type of ML classifier used.  
